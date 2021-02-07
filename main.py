@@ -5,9 +5,7 @@ BOARD_SIZE = 3
 INPUT_ERR_MSG = "'%s' is not a valid position!"
 INPUT_PROMPT_MSG = "Enter a number (1-9) to put an %s or type 'exit' to quit the program. "
 EXIT_FLAG = -1
-
-grid = Grid(BOARD_SIZE)
-current_mark = State.X
+MAX_TURNS = 9
 
 def get_input(mark: State) -> int:    
     """Gets raw input from cmd."""
@@ -27,6 +25,10 @@ def get_input(mark: State) -> int:
 
 
 def detect_win(grid: Grid) -> bool:
+    diag_sum = 0
+    anti_diag_sum = 0
+
+    # Iterate through entire board
     for row in range(grid.size):
         # Initialize our lateral flag
         row_sum = 0
@@ -36,19 +38,50 @@ def detect_win(grid: Grid) -> bool:
             # Since the enum State has -1 for X and 1 for O, we can add the values
             row_sum += grid.get_value((row, col)).value
             col_sum += grid.get_value((col, row)).value
-        if abs(row_sum) == 3 or abs(col_sum) == 3:
+
+            if row == col:
+                diag_sum += grid.get_value((row, col)).value
+            if row + col == 2:
+                anti_diag_sum += grid.get_value((row, col)).value
+
+        if grid.size in (abs(row_sum), abs(col_sum), abs(diag_sum), abs(anti_diag_sum)):
             # Someone won the game, the main loop can figure it out
             return True
+    return False
 
-user_input = get_input(current_mark)
+replay_input = "y"
 
-while user_input != EXIT_FLAG:
-    coords = (user_input % grid.size, user_input // grid.size)
-    grid.set_value(coords, current_mark)
+while replay_input == "y":
 
+    grid = Grid(BOARD_SIZE)
+    current_mark = State.X
+    win = False
+    user_input = 0 # default to start while loop
+    turn_count = 0
+
+    while not win and turn_count < MAX_TURNS:
+        # Toggle state of the mark
+        current_mark = State.X  if current_mark == State.O else State.O 
+        # User Interfacing
+        print(grid)
+        user_input = get_input(current_mark)
+        if user_input == EXIT_FLAG:
+            break
+        # Applying changes to our grid
+        coords = (user_input % grid.size, user_input // grid.size)
+        grid.set_value(coords, current_mark)
+        win = detect_win(grid)
+        turn_count += 1
+
+    if user_input == EXIT_FLAG:
+        break
+    
     print(grid)
-    current_mark = State.X  if current_mark == State.O else State.O 
-    user_input = get_input(current_mark)
+    if win:
+        print(current_mark.name + " won the game!")
+    else:
+        print("It was a draw!")
+    replay_input = input("Would you like to play again? (y/n)").strip()
         
 
  
